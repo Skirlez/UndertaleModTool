@@ -267,7 +267,8 @@ namespace UndertaleModTool.Windows
                         Version = (1, 0, 0),
                         Types = new[]
                         {
-                            (typeof(UndertaleRoom.GameObject), "Room object instance")
+                            (typeof(UndertaleRoom.GameObject), "Room object instance"),
+                            (typeof(UndertaleGameObject), "Child objects"),
                         }
                     },
                     new TypesForVersion

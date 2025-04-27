@@ -1034,45 +1034,54 @@ namespace UndertaleModTool.Windows
                         Version = (1, 0, 0),
                         Predicate = (objSrc, types, checkOne) =>
                         {
-                            if (!types.Contains(typeof(UndertaleRoom.GameObject)))
+                            if (!types.Contains(typeof(UndertaleRoom.GameObject)) && !types.Contains(typeof(UndertaleGameObject)))
                                 return null;
 
                             if (objSrc is not UndertaleGameObject obj)
                                 return null;
 
-                            IEnumerable<object[]> GetObjInstances()
-                            {
-                                if (data.IsGameMaker2())
+                            Dictionary<string, object[]> outDict = new();
+
+                            if (types.Contains(typeof(UndertaleRoom.GameObject))) {
+                                IEnumerable<object[]> GetObjInstances()
                                 {
-                                    foreach (var room in data.Rooms)
+                                    if (data.IsGameMaker2())
                                     {
-                                        foreach (var layer in room.Layers)
+                                        foreach (var room in data.Rooms)
                                         {
-                                            if (layer.InstancesData is not null)
+                                            foreach (var layer in room.Layers)
                                             {
-                                                foreach (var inst in layer.InstancesData.Instances)
-                                                    if (inst.ObjectDefinition == obj)
-                                                        yield return new object[] { inst, layer, room };
+                                                if (layer.InstancesData is not null)
+                                                {
+                                                    foreach (var inst in layer.InstancesData.Instances)
+                                                        if (inst.ObjectDefinition == obj)
+                                                            yield return new object[] { inst, layer, room };
+                                                }
                                             }
                                         }
                                     }
-                                }
-                                else
-                                {
-                                    foreach (var room in data.Rooms)
+                                    else
                                     {
-                                        foreach (var inst in room.GameObjects)
-                                            if (inst.ObjectDefinition == obj)
-                                                yield return new object[] { inst, room };
+                                        foreach (var room in data.Rooms)
+                                        {
+                                            foreach (var inst in room.GameObjects)
+                                                if (inst.ObjectDefinition == obj)
+                                                    yield return new object[] { inst, room };
+                                        }
                                     }
                                 }
+                                var objInstances = GetObjInstances();
+                                if (objInstances.Any())
+                                    outDict["Room object instance"] = checkOne ? objInstances.ToEmptyArray() : objInstances.ToArray();
                             }
-
-                            var objInstances = GetObjInstances();
-                            if (objInstances.Any())
-                                return new() { { "Room object instance", checkOne ? objInstances.ToEmptyArray() : objInstances.ToArray() } };
-                            else
+                            if (types.Contains(typeof(UndertaleGameObject))) {
+                                var childObjects = data.GameObjects.Where(x => x is not null).Where(x => x.ParentId == obj);
+                                if (childObjects.Any())
+                                    outDict["Child objects"] = checkOne ? childObjects.ToEmptyArray() : childObjects.ToArray();
+                            }
+                            if (outDict.Count == 0)
                                 return null;
+                            return outDict;
                         }
                     },
                     new PredicateForVersion()
